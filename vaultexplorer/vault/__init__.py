@@ -1,0 +1,1 @@
+from .treemodel import VaultTreeModel
