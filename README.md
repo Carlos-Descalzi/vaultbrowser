@@ -4,6 +4,8 @@ A terminal-based HashiCorp's Vault client
 
 For the moment only supports generic secret engine.
 
+![Screenhost](screenshot.png?raw=true "Screenhost")
+
 ## Configuration
 It requires environment variables VAULT_ADDR and VAULT_TOKEN to work
 
