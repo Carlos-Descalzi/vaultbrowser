@@ -51,9 +51,9 @@ class UiWriter:
         self._buffer += string
         return self
 
-    def writefill(self, string, length):
+    def writefill(self, string, length, fillchar=" "):
         str_len = _ansi_string_len(string)
-        self._buffer += string + " " * (length - str_len)
+        self._buffer += string + fillchar * (length - str_len)
         return self
 
     def fg(self, color):

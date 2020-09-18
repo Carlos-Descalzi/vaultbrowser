@@ -67,11 +67,43 @@ class Node:
 class VaultListModel(ListModel):
     def __init__(self):
         super().__init__()
-        url = os.environ["VAULT_ADDR"]
-        token = os.environ["VAULT_TOKEN"]
-        self._client = hvac.Client(url, token)
-        self._root = Node(self._client, None, "secret/")
-        self._current = self._root
+        #url = os.environ["VAULT_ADDR"]
+        #token = os.environ["VAULT_TOKEN"]
+        #self._client = hvac.Client(url, token)
+        self._client = None
+        self._backend = None
+        self._root = None
+        self._current = None
+
+    def set_client(self, client):
+        old_client = self._client
+        self._client = client
+        if old_client == client:
+            self._backend = None
+        self._update()
+
+    def get_client(self):
+        return self._client
+
+    client = property(get_client, set_client)
+
+    def set_backend(self, backend):
+        self._backend = backend
+        self._update()
+
+    def get_backend(self):
+        return self._backend
+
+    backend = property(get_backend, set_backend)
+
+    def _update(self):
+        if self._client and self._backend:
+            self._root = Node(self._client, None, self._backend+"/")
+            self._current = self._root
+        else:
+            self._root = None
+            self._current = None
+        self.notify_list_changed()
 
     def get_root(self):
         return self._root
@@ -97,7 +129,9 @@ class VaultListModel(ListModel):
         return self._current == self._root
 
     def get_item_count(self):
-        return self._current.child_count + (0 if self.in_root else 1)
+        if self._root:
+            return self._current.child_count + (0 if self.in_root else 1)
+        return 0
 
     def get_item(self, index):
         if not self.in_root:

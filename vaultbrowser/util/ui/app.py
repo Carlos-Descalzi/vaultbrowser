@@ -93,6 +93,7 @@ class Application:
 
         if len(read) > 0:
             keystroke = kbd.keystroke_from_str(read)
+
             if keystroke == kbd.KEY_ESC:
                 self._handle_exit()
             elif keystroke == kbd.KEY_TAB:

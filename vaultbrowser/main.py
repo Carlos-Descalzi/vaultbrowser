@@ -4,8 +4,9 @@ logging.basicConfig(
     filename="vaultbrowser.log", format="%(message)s", level=logging.DEBUG
 )
 from .util import kbd, ansi
-from .util.ui import Application, TextView, TreeView, Rect, TitledView, ListView, COLORS, QuestionDialog
-from .vault import VaultListModel
+from .util.ui import Application, TextView, TreeView, Rect, TitledView, ListView, COLORS, QuestionDialog, InputDialog
+from .vault import VaultListModel, ServicesListModel, BackendListModel
+from .service import Service
 import json
 import tempfile
 import subprocess
@@ -18,30 +19,49 @@ class VaultBrowser(Application):
     def __init__(self):
         super().__init__()
 
-        COLORS["menu.bg"] = "\u001b[48;5;241m"
-        COLORS["menu.fg"] = "\u001b[38;5;255m\u001b[1m"
+        #COLORS["menu.bg"] = "\u001b[48;5;241m"
+        #COLORS["menu.fg"] = "\u001b[38;5;255m\u001b[1m"
 
         max_height, max_width = ansi.terminal_size()
 
-        menu = TextView(
-            rect=Rect(1,1,max_width,1),
-            text="Enter: View - a: Add - e: Edit - d: Delete - TAB: cycle focus - ESC: Exit"
+        self._services_model = ServicesListModel()
+        self._services_list = ListView(
+            model=self._services_model,
+            selectable=True
         )
-        menu.color_key_prefix = 'menu'
-        menu.focusable = False
+        self._services_list.item_renderer = self._render_service
+        self._services_list.on_select.add(self._on_service_selected)
 
-        self.add_component(menu)
+        self._backends_model = BackendListModel()
+        self._backends_list = ListView(
+            model=self._backends_model,
+            selectable=True
+        )
+        self._backends_list.on_select.add(self._on_backend_selected)
 
-        self._list_model = VaultListModel()
+        self._vault_model = VaultListModel()
         self._tree = ListView(
-            rect=Rect(1,2,40,max_height-2),
-            model=self._list_model
+            model=self._vault_model,
+            selectable=True
         )
-        self._tree.selectable = True
         self._tree.on_select.add(self._on_select)
+
+
+        services_title = TitledView(
+            rect=Rect(1,1,40,10),
+            title="Services",
+            inner=self._services_list
+        )
+        self.add_component(services_title)
+        backends_title = TitledView(
+            rect=Rect(1,11,40,10),
+            title="Backends",
+            inner=self._backends_list
+        )
+        self.add_component(backends_title)
         self._tree_title = TitledView(
-            rect=Rect(1,2,40,max_height-2),
-            title=str(self._list_model.get_root()),
+            rect=Rect(1,21,40,20),
+            title="",
             inner=self._tree
         )
         self.add_component(self._tree_title)
@@ -49,31 +69,35 @@ class VaultBrowser(Application):
         self._textview = TextView()
         self._textview.color_key_prefix = 'valueview'
         self._breadcrumb = TitledView(
-            rect=Rect(41,2,max_width-40,max_height-2),
+            rect=Rect(41,1,max_width-40,max_height-2),
             title="",
             inner=self._textview
         )
         self.add_component(self._breadcrumb)
 
-        self.set_key_handler(kbd.keystroke_from_str("a"), self._do_add)
-        self.set_key_handler(kbd.keystroke_from_str("e"), self._do_edit)
-        self.set_key_handler(kbd.keystroke_from_str("d"), self._do_delete)
+        self.set_key_handler(1, self._do_add) # Ctrl-A
+        self.set_key_handler(5, self._do_edit) # Ctrl-E
+        self.set_key_handler(4, self._do_delete) #Ctrl-D
 
         self._read_config()
-        self.set_focused_view(self._tree_title)
+        self.set_focused_view(services_title)
 
     def _read_config(self):
-        config_file = self.get_config_file()
+        config_dir = os.path.join(os.environ['HOME'], ".vaultbrowser")
+        if not os.path.isdir(config_dir):
+            os.makedirs(config_dir)
+        self._read_general_config(config_dir)
+        self._read_services_config(config_dir)
+
+    def _read_general_config(self, config_dir):
+        config_file = self.get_config_file(config_dir)
         parser = configparser.ConfigParser()
         parser.read(config_file)
         self._editor = parser["DEFAULT"]["editor"]
         self._highlighter = parser["DEFAULT"].get("highlighter")
         logging.info(self._highlighter)
 
-    def get_config_file(self):
-        config_dir = os.path.join(os.environ['HOME'], ".vaultbrowser")
-        if not os.path.isdir(config_dir):
-            os.makedirs(config_dir)
+    def get_config_file(self, config_dir):
         config_file = os.path.join(config_dir, "init.conf")
         if not os.path.isfile(config_file):
             # Write default configuration
@@ -90,6 +114,52 @@ class VaultBrowser(Application):
             with open(config_file, "w") as f:
                 f.write(template)
         return config_file
+
+    def _read_services_config(self, config_dir):
+
+        config_file = os.path.join(config_dir,'services.ini')
+
+        if not os.path.isfile(config_file):
+            self._create_default_services_file(config_file)
+
+        parser = configparser.ConfigParser()
+        parser.read(config_file)
+
+        services = []
+
+        for service_name in parser.sections():
+            config = parser[service_name]
+            service = Service(
+                service_name,
+                config['url'],
+                config['token'],
+                config.get('verify','false').lower() == 'true'
+            )
+            service.connect()
+            services.append(service)
+
+        self._services_model.services = services
+
+    def _create_default_services_file(self, config_file):
+        vault_url = os.environ.get('VAULT_ADDR')
+        vault_token = os.environ.get('VAULT_ADDR')
+        vault_verify = 'false'
+        with open(config_file,'w') as f:
+            if vault_url and vault_token:
+                f.write(f"[Local service]\nurl={vault_url}\ntoken={vault_token}\nverify={vault_verify}\n")
+            else:
+                f.write(f"[Service name here]\nurl=service url here\ntoken=Token goes here\nverify=false\n")
+
+    def _render_service(self, view, item):
+        return item.name if item else ""
+
+    def _on_service_selected(self, view, item):
+        logging.info(f"Service selected: {item}")
+        self._backends_model.client = item.client
+        self._vault_model.client = item.client
+
+    def _on_backend_selected(self, view, item):
+        self._vault_model.backend = item.name
 
     def _on_select(self, tree, item):
         try:
@@ -132,12 +202,16 @@ class VaultBrowser(Application):
 
 
     def _do_add(self,*_):
+        self.show_input_dialog(
+            "Enter entry name",
+            self._on_add_name_confirmed
+        )
+
+    def _on_add_name_confirmed(self, entry_name)
         selected = self._tree.model.get_current()
 
-        dummy_name = "[NAME OF THE ELEMENT]"
-
         tf = tempfile.NamedTemporaryFile(mode="w+", suffix=".json")
-        json.dump({"name": dummy_name, "data": {"value": ""}}, tf, indent=4)
+        json.dump({"data":""}, tf, indent=4)
         tf.flush()
 
         result = subprocess.run([self._editor, tf.name])
@@ -145,20 +219,16 @@ class VaultBrowser(Application):
         if result.returncode == 0:
             tf.seek(0)
             try:
-                edited_stuff = json.load(tf)
-
-                name = edited_stuff["name"]
-                data = edited_stuff["data"]
-
-                if name != dummy_name:
-                    selected.add_child(name, data)
+                data = json.load(tf)
+                if data: 
+                    selected.add_child(entry_name, data)
                     self._textview.text = json.dumps(data, indent=4)
             except ValueError as e:
                 logging.error(e)
             except Exception as e:
                 logging.error(e)
         self.refresh()
-
+        
     def _do_edit(self, *_):
         selected = self._tree.current_item
 
@@ -206,11 +276,20 @@ class VaultBrowser(Application):
         dialog = QuestionDialog(title, message, options)
         self.open_popup(dialog)
 
-def main():
-    if not "VAULT_ADDR" in os.environ or not "VAULT_TOKEN" in os.environ:
-        print("Missing environment variables: VAULT_ADDR and/or VAULT_TOKEN")
-        sys.exit(1)
+    def show_input_dialog(self, title, on_confirm):
+        def _wrap_op(f):
+            def call(input_str):
+                f(input_str)
+                self.close_popup()
+            return call 
+        
+        dialog = InputDialog(
+            title, 
+            _wrap_op(on_confirm),
+            disallowed_chars=' /\\&%')
+        self.open_popup(dialog)
 
+def main():
     explorer = VaultBrowser()
     explorer.main_loop()
 

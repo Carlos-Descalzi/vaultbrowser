@@ -39,6 +39,7 @@ class ListView(View):
         self._selected_index = -1
         self._on_select = ListenerHandler(self)
         self.set_model(model)
+        self._item_renderer = self._default_render
 
     def set_selectable(self, selectable):
         self._selectable = selectable
@@ -89,8 +90,23 @@ class ListView(View):
 
     model = property(get_model, set_model)
 
+    def set_item_renderer(self, item_renderer):
+        if item_renderer is None:
+            self._item_renderer = self._default_render
+        else:
+            self._item_renderer = item_renderer
+        self.queue_update()
+
+    def get_item_renderer(self):
+        return self._item_renderer
+
+    item_renderer = property(get_item_renderer, set_item_renderer)
+
+    def _default_render(self, view, item):
+        return str(item) if item else ""
+
     def render_item(self, item, current, selected):
-        str_value = str(item) if item else ""
+        str_value = self._item_renderer(self, item)
         if current:
             return str(ansi.begin().underline().write(str_value).reset())
         return str_value
