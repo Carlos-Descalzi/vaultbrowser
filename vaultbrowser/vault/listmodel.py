@@ -70,9 +70,6 @@ class Node:
 class VaultListModel(ListModel):
     def __init__(self):
         super().__init__()
-        #url = os.environ["VAULT_ADDR"]
-        #token = os.environ["VAULT_TOKEN"]
-        #self._client = hvac.Client(url, token)
         self._client = None
         self._backend = None
         self._root = None

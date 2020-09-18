@@ -65,8 +65,11 @@ class UiWriter:
         return self
 
     def put(self):
-        sys.stdout.write(self._buffer)
-        sys.stdout.flush()
+        try:
+            sys.stdout.write(self._buffer)
+            sys.stdout.flush()
+        except:
+            pass
 
     def __str__(self):
         return self._buffer
