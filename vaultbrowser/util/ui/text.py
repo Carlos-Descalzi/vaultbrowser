@@ -39,10 +39,11 @@ class TextView(View):
                 self._rect.x, self._rect.y + i
             ).writefill(line, self._rect.width).reset()
 
+        buff.write(self.get_color("bg"))
         while i < self._rect.height:
             buff.gotoxy(self._rect.x,self._rect.y+i).writefill('',self._rect.width)
             i+=1
-        buff.put()
+        buff.reset().put()
 
     def on_key_press(self, input_key):
         if input_key == kbd.KEY_DOWN:
