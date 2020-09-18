@@ -207,7 +207,7 @@ class VaultBrowser(Application):
             self._on_add_name_confirmed
         )
 
-    def _on_add_name_confirmed(self, entry_name)
+    def _on_add_name_confirmed(self, entry_name):
         selected = self._tree.model.get_current()
 
         tf = tempfile.NamedTemporaryFile(mode="w+", suffix=".json")
