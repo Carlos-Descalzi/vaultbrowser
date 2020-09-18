@@ -1,4 +1,5 @@
 from vaultbrowser.util.ui import ListModel
+import logging
 import hvac
 import os
 
@@ -8,6 +9,7 @@ class Node:
         self._parent = parent
         self._name = name
         self._children = None if name[-1] == "/" else []
+        logging.info(f'Path:{self.path}')
 
     @property
     def child_count(self):
@@ -18,18 +20,19 @@ class Node:
         path = []
         node = self
         while node:
-            path.append(node.name)
+            path.append(node.name.replace('/',''))
             node = node.parent
 
-        return "".join(reversed(path))
+        return "/".join(reversed(path))
 
     @property
     def children(self):
         if self._children is None:
-            self._children = []
+            children = []
             result = self._client.list(self.path)
             for item in result["data"]["keys"]:
-                self.children.append(Node(self._client, self, item))
+                children.append(Node(self._client, self, item))
+            self._children = sorted(children, key=lambda x:x.name)
         return self._children
 
     def get_value(self):
@@ -61,7 +64,7 @@ class Node:
     def add_child(self, name, data):
         new_path = "/".join([self.path, name])
         self._client.write(new_path, **data)
-        self._children.append(Node(self._client, new_path))
+        self._children.append(Node(self._client,self , name))
         return len(self._children) - 1
 
 class VaultListModel(ListModel):

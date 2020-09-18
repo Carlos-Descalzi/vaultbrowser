@@ -18,7 +18,6 @@ class BackendListModel(ListModel):
 
     def set_client(self, client):
         self._client = client
-        logging.info("2")
         self._update()
 
     def get_client(self):
@@ -28,10 +27,11 @@ class BackendListModel(ListModel):
 
     def _update(self):
         if self._client:
-            self._backends = [
-                BackendItem(k,v)
-                for k,v in self._client.sys.list_mounted_secrets_engines().items()
-            ]
+            info = self._client.sys.list_mounted_secrets_engines()
+            self._backends = sorted(
+                [ BackendItem(k,v) for k,v in info.items() ],
+                key=lambda x:x.name
+            )
         else:
             self._backends = []
         self.notify_list_changed()

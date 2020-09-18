@@ -10,9 +10,10 @@ from .service import Service
 import json
 import tempfile
 import subprocess
-import os
 import configparser
+import traceback
 import sys
+import os
 
 
 class VaultBrowser(Application):
@@ -226,7 +227,7 @@ class VaultBrowser(Application):
             except ValueError as e:
                 logging.error(e)
             except Exception as e:
-                logging.error(e)
+                logging.error(f'{e} - {traceback.format_exc()}')
         self.refresh()
         
     def _do_edit(self, *_):
