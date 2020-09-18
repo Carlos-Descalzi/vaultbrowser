@@ -33,10 +33,16 @@ class TextView(View):
         chunk = self._text[self._scroll_y : self._scroll_y + height]
         chunk = [l[self._scroll_x : self._scroll_x + width] for l in chunk]
 
+        buff = ansi.begin()
         for i, line in enumerate(chunk):
-            ansi.begin().write(self.get_color("bg")).write(self.get_color("fg")).gotoxy(
+            buff.write(self.get_color("bg")).write(self.get_color("fg")).gotoxy(
                 self._rect.x, self._rect.y + i
-            ).writefill(line, self._rect.width).reset().put()
+            ).writefill(line, self._rect.width).reset()
+
+        while i < self._rect.height:
+            buff.gotoxy(self._rect.x,self._rect.y+i).writefill('',self._rect.width)
+            i+=1
+        buff.put()
 
     def on_key_press(self, input_key):
         if input_key == kbd.KEY_DOWN:

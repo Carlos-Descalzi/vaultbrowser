@@ -48,21 +48,23 @@ class VaultBrowser(Application):
         )
         self._tree.on_select.add(self._on_select)
 
+        h1 = int((max_height-1)/4)
+        w1 = int(max_width / 3)
 
         services_title = TitledView(
-            rect=Rect(1,1,40,10),
+            rect=Rect(1,1,w1,h1),
             title="Services",
             inner=self._services_list
         )
         self.add_component(services_title)
         backends_title = TitledView(
-            rect=Rect(1,11,40,10),
+            rect=Rect(1,h1+1,w1,h1),
             title="Backends",
             inner=self._backends_list
         )
         self.add_component(backends_title)
         self._tree_title = TitledView(
-            rect=Rect(1,21,40,20),
+            rect=Rect(1,h1*2+1,w1,max_height-(h1*2+2)),
             title="",
             inner=self._tree
         )
@@ -71,7 +73,7 @@ class VaultBrowser(Application):
         self._textview = TextView()
         self._textview.color_key_prefix = 'valueview'
         self._breadcrumb = TitledView(
-            rect=Rect(41,1,max_width-40,max_height-2),
+            rect=Rect(w1+1,1,max_width-(w1+1),max_height-2),
             title="",
             inner=self._textview
         )
@@ -85,6 +87,32 @@ class VaultBrowser(Application):
         self._read_config()
         self.set_focused_view(services_title)
 
+    def show_question_dialog(self, title, message, options):
+        def _wrap_op(f):
+            def call():
+                f()
+                self.close_popup()
+
+            return call
+
+        options = [(k, l, _wrap_op(f)) for k, l, f in options]
+        dialog = QuestionDialog(title, message, options)
+        self.open_popup(dialog)
+
+    def show_input_dialog(self, title, on_confirm):
+        def _wrap_op(f):
+            def call(input_str):
+                f(input_str)
+                self.close_popup()
+            return call 
+        
+        dialog = InputDialog(
+            title, 
+            _wrap_op(on_confirm),
+            disallowed_chars=' /\\&%')
+        self.open_popup(dialog)
+
+
     def _read_config(self):
         config_dir = os.path.join(os.environ['HOME'], ".vaultbrowser")
         if not os.path.isdir(config_dir):
@@ -93,30 +121,14 @@ class VaultBrowser(Application):
         self._read_services_config(config_dir)
 
     def _read_general_config(self, config_dir):
-        config_file = self.get_config_file(config_dir)
+        config_file = os.path.join(config_dir, "vaultbrowser.ini")
+        if not os.path.isfile(config_file):
+            self._create_default_general_config(config_file)
         parser = configparser.ConfigParser()
         parser.read(config_file)
         self._editor = parser["DEFAULT"]["editor"]
         self._highlighter = parser["DEFAULT"].get("highlighter")
         logging.info(self._highlighter)
-
-    def get_config_file(self, config_dir):
-        config_file = os.path.join(config_dir, "init.conf")
-        if not os.path.isfile(config_file):
-            # Write default configuration
-            template=(
-                "[DEFAULT]\n"
-                +"editor=/usr/bin/vi\n"
-            )
-            # Put as default a well known json highlighter
-            if os.path.isfile('/usr/bin/jq'):
-                template+="highlighter=cat {file}|/usr/bin/jq -C\n"
-            else:
-                template+="#highlighter=/path/to/some/json/highlighter {file}"
-
-            with open(config_file, "w") as f:
-                f.write(template)
-        return config_file
 
     def _read_services_config(self, config_dir):
 
@@ -143,6 +155,20 @@ class VaultBrowser(Application):
 
         self._services_model.services = services
 
+    def _create_default_general_config(self, config_file):
+        template=(
+            "[DEFAULT]\n"
+            +"editor=/usr/bin/vi\n"
+        )
+        # Put as default a well known json highlighter
+        if os.path.isfile('/usr/bin/jq'):
+            template+="highlighter=cat {file}|/usr/bin/jq -C\n"
+        else:
+            template+="#highlighter=/path/to/some/json/highlighter {file}"
+
+        with open(config_file, "w") as f:
+            f.write(template)
+
     def _create_default_services_file(self, config_file):
         vault_url = os.environ.get('VAULT_ADDR')
         vault_token = os.environ.get('VAULT_ADDR')
@@ -157,12 +183,14 @@ class VaultBrowser(Application):
         return item.name if item else ""
 
     def _on_service_selected(self, view, item):
-        logging.info(f"Service selected: {item}")
         self._backends_model.client = item.client
         self._vault_model.client = item.client
+        self._vault_model.backend = None
+        self._textview.text = ""
 
     def _on_backend_selected(self, view, item):
         self._vault_model.backend = item.name
+        self._textview.text = ""
 
     def _on_select(self, tree, item):
         try:
@@ -202,7 +230,6 @@ class VaultBrowser(Application):
         if len(path) > 40:
             path = path[-40:]
         self._tree_title.title = path
-
 
     def _do_add(self,*_):
         self.show_input_dialog(
@@ -267,33 +294,7 @@ class VaultBrowser(Application):
             [('y', "Yes", confirm), ('n', "No", cancel)]
         )
 
-    def show_question_dialog(self, title, message, options):
-        def _wrap_op(f):
-            def call():
-                f()
-                self.close_popup()
-
-            return call
-
-        options = [(k, l, _wrap_op(f)) for k, l, f in options]
-        dialog = QuestionDialog(title, message, options)
-        self.open_popup(dialog)
-
-    def show_input_dialog(self, title, on_confirm):
-        def _wrap_op(f):
-            def call(input_str):
-                f(input_str)
-                self.close_popup()
-            return call 
-        
-        dialog = InputDialog(
-            title, 
-            _wrap_op(on_confirm),
-            disallowed_chars=' /\\&%')
-        self.open_popup(dialog)
-
     def _show_help(self, *_):
-
         dialog = TextView(rect=Rect(0,0,70,20),text=HELP)
         self.open_popup(dialog)
 
