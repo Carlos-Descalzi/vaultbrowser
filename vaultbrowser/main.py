@@ -7,6 +7,7 @@ from .util import kbd, ansi
 from .util.ui import Application, TextView, TreeView, Rect, TitledView, ListView, COLORS, QuestionDialog, InputDialog
 from .vault import VaultListModel, ServicesListModel, BackendListModel
 from .service import Service
+from .texts import HELP
 import json
 import tempfile
 import subprocess
@@ -79,6 +80,7 @@ class VaultBrowser(Application):
         self.set_key_handler(1, self._do_add) # Ctrl-A
         self.set_key_handler(5, self._do_edit) # Ctrl-E
         self.set_key_handler(4, self._do_delete) #Ctrl-D
+        self.set_key_handler(8, self._show_help) #Ctrl-H
 
         self._read_config()
         self.set_focused_view(services_title)
@@ -288,6 +290,11 @@ class VaultBrowser(Application):
             title, 
             _wrap_op(on_confirm),
             disallowed_chars=' /\\&%')
+        self.open_popup(dialog)
+
+    def _show_help(self, *_):
+
+        dialog = TextView(rect=Rect(0,0,70,20),text=HELP)
         self.open_popup(dialog)
 
 def main():
