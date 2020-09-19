@@ -1,28 +1,29 @@
+import logging
+from abc import ABCMeta, abstractmethod
 
-
-class BackendHandler:
+class BackendHandler(metaclass=ABCMeta):
     def __init__(self, client, backend_info):
         self._client = client
         self._backend_info = backend_info
+        logging.info(self._backend_info)
 
+    @abstractmethod
     def write(self, path, value):
         pass
 
+    @abstractmethod
     def read(self, path):
         pass
 
+    @abstractmethod
     def list(self, path):
         pass
 
+    @abstractmethod
     def delete(self, path):
         pass
-
-class GenericHandler(BackendHandler):
-    pass
 
 class KV2Handler(BackendHandler):
     pass
 
 
-def get_handler(client, backend_info):
-    pass

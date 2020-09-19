@@ -9,6 +9,15 @@ class BackendItem:
     def __str__(self):
         return self.name
 
+    @property
+    def type_str(self):
+        type_str = self.info['type']
+        version = (self.info.get('options') or {}).get('version')
+        if version:
+            type_str+=f' {version}'
+        return type_str
+        
+
 class BackendListModel(ListModel):
     
     def __init__(self):
@@ -29,7 +38,7 @@ class BackendListModel(ListModel):
         if self._client:
             info = self._client.sys.list_mounted_secrets_engines()
             self._backends = sorted(
-                [ BackendItem(k,v) for k,v in info.items() ],
+                [ BackendItem(k,v) for k,v in info['data'].items() ],
                 key=lambda x:x.name
             )
         else:

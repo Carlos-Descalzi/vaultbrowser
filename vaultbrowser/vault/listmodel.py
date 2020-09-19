@@ -1,14 +1,16 @@
 from vaultbrowser.util.ui import ListModel
 import logging
+import traceback
 import hvac
 import os
+from .handler import get_handler
 
 class Node:
-    def __init__(self, client, parent, name):
-        self._client = client
+    def __init__(self, handler, parent, name):
+        self._handler = handler
         self._parent = parent
         self._name = name
-        self._children = None if name[-1] == "/" else []
+        self._children = None #if name and name[-1] == "/" else []
         logging.info(f'Path:{self.path}')
 
     @property
@@ -20,32 +22,39 @@ class Node:
         path = []
         node = self
         while node:
-            path.append(node.name.replace('/',''))
+            if node.name:
+                path.append(node.name.replace('/',''))
             node = node.parent
 
-        return "/".join(reversed(path))
+        return '/'.join(reversed(path))
 
     @property
     def children(self):
-        if self._children is None:
-            children = []
-            result = self._client.list(self.path)
-            for item in result["data"]["keys"]:
-                children.append(Node(self._client, self, item))
-            self._children = sorted(children, key=lambda x:x.name)
-        return self._children
+        try:
+            if self._children is None:
+                children = []
+                result = self._handler.list(self.path)
+                self._children= sorted(
+                    [Node(self._handler, self, i) for i in result],
+                    key=lambda x:x.name
+                )
+            return self._children
+        except Exception as e:
+            logging.error(f'{e} - {traceback.format_exc()}')
+            return self._children
+            
 
     def get_value(self):
-        return self._client.read(self.path)
+        return self._handler.read(self.path)
 
     def set_value(self, value):
-        self._client.write(self.path, **value)
+        self._handler.write(self.path, **value)
 
     value = property(get_value, set_value)
 
     @property
     def leaf(self):
-        return self._name[-1] != '/'
+        return self._name[-1] != '/' if self._name else False
 
     @property
     def parent(self):
@@ -59,18 +68,19 @@ class Node:
         return self.name
 
     def remove(self):
-        self._client.delete(self.path)
+        self._handler.delete(self.path)
 
     def add_child(self, name, data):
         new_path = "/".join([self.path, name])
         self._client.write(new_path, **data)
-        self._children.append(Node(self._client,self , name))
+        self._children.append(Node(self._handler,self , name))
         return len(self._children) - 1
 
 class VaultListModel(ListModel):
     def __init__(self):
         super().__init__()
         self._client = None
+        self._handler = None
         self._backend = None
         self._root = None
         self._current = None
@@ -80,6 +90,7 @@ class VaultListModel(ListModel):
         self._client = client
         if old_client == client:
             self._backend = None
+            self._handler = None
         self._update()
 
     def get_client(self):
@@ -88,7 +99,12 @@ class VaultListModel(ListModel):
     client = property(get_client, set_client)
 
     def set_backend(self, backend):
-        self._backend = backend
+        if backend:
+            self._backend = backend
+            self._handler = get_handler(self._client, backend)
+        else:
+            self._backend = None
+            self._handler = None
         self._update()
 
     def get_backend(self):
@@ -97,13 +113,16 @@ class VaultListModel(ListModel):
     backend = property(get_backend, set_backend)
 
     def _update(self):
-        if self._client and self._backend:
-            self._root = Node(self._client, None, self._backend+"/")
-            self._current = self._root
-        else:
-            self._root = None
-            self._current = None
-        self.notify_list_changed()
+        try:
+            if self._handler:
+                self._root = Node(self._handler, None, "")
+                self._current = self._root
+            else:
+                self._root = None
+                self._current = None
+            self.notify_list_changed()
+        except Exception as e:
+            logging.error(f'{e} - {traceback.format_exc()}')
 
     def get_root(self):
         return self._root

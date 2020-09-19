@@ -40,6 +40,7 @@ class VaultBrowser(Application):
             selectable=True
         )
         self._backends_list.on_select.add(self._on_backend_selected)
+        self._backends_list.item_renderer = self._render_backend
 
         self._vault_model = VaultListModel()
         self._tree = ListView(
@@ -79,10 +80,10 @@ class VaultBrowser(Application):
         )
         self.add_component(self._breadcrumb)
 
-        self.set_key_handler(1, self._do_add) # Ctrl-A
-        self.set_key_handler(5, self._do_edit) # Ctrl-E
-        self.set_key_handler(4, self._do_delete) #Ctrl-D
-        self.set_key_handler(8, self._show_help) #Ctrl-H
+        self.set_key_handler(kbd.keystroke_from_str('a'), self._do_add, False)
+        self.set_key_handler(kbd.keystroke_from_str('e'), self._do_edit, False)
+        self.set_key_handler(kbd.keystroke_from_str('d'), self._do_delete, False)
+        self.set_key_handler(kbd.keystroke_from_str('h'), self._show_help, False)
 
         self._read_config()
         self.set_focused_view(services_title)
@@ -182,6 +183,14 @@ class VaultBrowser(Application):
     def _render_service(self, view, item):
         return item.name if item else ""
 
+    def _render_backend(self, view, item):
+        backend_type = f"({item.type_str})" 
+        return (
+            item.name 
+            + (' ' * (view.rect.width - (len(backend_type)+len(item.name))))
+            + backend_type
+        )
+
     def _on_service_selected(self, view, item):
         self._backends_model.client = item.client
         self._vault_model.client = item.client
@@ -189,7 +198,7 @@ class VaultBrowser(Application):
         self._textview.text = ""
 
     def _on_backend_selected(self, view, item):
-        self._vault_model.backend = item.name
+        self._vault_model.backend = item
         self._textview.text = ""
 
     def _on_select(self, tree, item):
@@ -203,7 +212,6 @@ class VaultBrowser(Application):
                 tree.model.go_to(item)
                 self._set_path_title(item.path)
         except Exception as e:
-            import traceback
             logging.error(f'{e} - {traceback.format_exc()}')
 
     def _show_selected_item(self, item):

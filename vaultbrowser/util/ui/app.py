@@ -9,6 +9,11 @@ import atexit
 import fcntl
 
 
+class KeyHandler:
+    def __init__(self, handler, valid_on_popup):
+        self.handler = handler
+        self.valid_on_popup = valid_on_popup
+
 class Application:
     def __init__(self):
         self._components = []
@@ -82,8 +87,8 @@ class Application:
     def queue_update(self, view):
         self._queue.add(view)
 
-    def set_key_handler(self, keystroke, handler):
-        self._key_handlers[keystroke] = handler
+    def set_key_handler(self, keystroke, handler, valid_on_popup=True):
+        self._key_handlers[keystroke] = KeyHandler(handler, valid_on_popup)
 
     def unset_key_handler(self, keystroke):
         self._key_handlers.pop(keystroke)
@@ -99,12 +104,11 @@ class Application:
             elif keystroke == kbd.KEY_TAB:
                 self._cycle_focus()
             else:
-                key_handler = self._key_handlers.get(keystroke)
+                handler = self._key_handlers.get(keystroke)
 
-                if key_handler:
-                    key_handler(self)
+                if handler and (handler.valid_on_popup or not self._active_popup):
+                    handler.handler(self)
                 else:
-                    # if not self.on_key_press(keystroke):
                     self._send_key_event(keystroke)
 
     def _handle_exit(self):
