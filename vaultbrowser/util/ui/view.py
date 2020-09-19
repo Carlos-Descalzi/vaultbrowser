@@ -72,10 +72,7 @@ class View:
 
     def get_color_key(self, color):
         return (
-            self._color_key_prefix
-            + (".focused" if self.focused else "")
-            + "."
-            + color
+            self._color_key_prefix + (".focused" if self.focused else "") + "." + color
         )
 
     def get_color(self, key):

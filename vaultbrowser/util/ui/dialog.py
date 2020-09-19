@@ -54,30 +54,31 @@ class QuestionDialog(View):
         if chr_key in self._options:
             self._options[chr_key].handler()
 
+
 class InputDialog(View):
-    def __init__(self, title, on_confirm, disallowed_chars=''):
+    def __init__(self, title, on_confirm, disallowed_chars=""):
         super().__init__()
         self._title = title
         self._input = Input(disallowed_chars=disallowed_chars)
         self._input.on_enter.add(self._on_enter)
         self._on_confirm = on_confirm
-        self._rect = Rect( 0, 0, 40, 5)
+        self._rect = Rect(0, 0, 40, 5)
 
     def _on_enter(self, field, input_text):
         self._on_confirm(input_text)
 
     def update(self):
-        (ansi
-            .begin()
+        (
+            ansi.begin()
             .gotoxy(self._rect.x, self._rect.y)
             .reverse()
             .writefill(self._title, self._rect.width)
-            .gotoxy(self._rect.x, self._rect.y+4)
-            .writefill('Enter: Accept, Esc: Cancel',self._rect.width)
+            .gotoxy(self._rect.x, self._rect.y + 4)
+            .writefill("Enter: Accept, Esc: Cancel", self._rect.width)
             .reset()
         ).put()
         r = self._rect.copy()
-        r.y+=2
+        r.y += 2
         self._input.rect = r
         self._input.update()
 

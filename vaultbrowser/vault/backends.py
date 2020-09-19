@@ -1,6 +1,7 @@
 from vaultbrowser.util.ui import ListModel
 import logging
 
+
 class BackendItem:
     def __init__(self, name, info):
         self.name = name
@@ -11,15 +12,14 @@ class BackendItem:
 
     @property
     def type_str(self):
-        type_str = self.info['type']
-        version = (self.info.get('options') or {}).get('version')
+        type_str = self.info["type"]
+        version = (self.info.get("options") or {}).get("version")
         if version:
-            type_str+=f' {version}'
+            type_str += f" {version}"
         return type_str
-        
+
 
 class BackendListModel(ListModel):
-    
     def __init__(self):
         super().__init__()
         self._client = None
@@ -38,8 +38,8 @@ class BackendListModel(ListModel):
         if self._client:
             info = self._client.sys.list_mounted_secrets_engines()
             self._backends = sorted(
-                [ BackendItem(k,v) for k,v in info['data'].items() ],
-                key=lambda x:x.name
+                [BackendItem(k, v) for k, v in info["data"].items()],
+                key=lambda x: x.name,
             )
         else:
             self._backends = []
@@ -50,4 +50,3 @@ class BackendListModel(ListModel):
 
     def get_item(self, index):
         return self._backends[index]
-

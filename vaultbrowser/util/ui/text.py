@@ -41,8 +41,8 @@ class TextView(View):
 
         buff.write(self.get_color("bg"))
         while i < self._rect.height:
-            buff.gotoxy(self._rect.x,self._rect.y+i).writefill('',self._rect.width)
-            i+=1
+            buff.gotoxy(self._rect.x, self._rect.y + i).writefill("", self._rect.width)
+            i += 1
         buff.reset().put()
 
     def on_key_press(self, input_key):

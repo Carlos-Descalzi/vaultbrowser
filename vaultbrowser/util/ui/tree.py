@@ -4,8 +4,9 @@ from typing import Any, List
 from .listener import ListenerHandler
 from vaultbrowser.util import ansi, kbd
 
-_ICON_OPEN= '▾'
-_ICON_CLOSED= '▸'
+_ICON_OPEN = "▾"
+_ICON_CLOSED = "▸"
+
 
 class TreeModel(metaclass=ABCMeta):
     """
@@ -36,9 +37,11 @@ class TreeModel(metaclass=ABCMeta):
     def add(self, path, **data):
         pass
 
+
 class TreeView(View):
     _model = None
     _current_node = None
+
     def __init__(self, rect=None, model=None):
         super().__init__(rect)
         self._scroll_y = 0
@@ -70,11 +73,13 @@ class TreeView(View):
             if self._current_y == 0:
                 buff.underline()
             buff.write(str(self._current_node)).reset()
-            
-            max_children = min(self._rect.height-1,self._model.get_child_count(self._current_node))
+
+            max_children = min(
+                self._rect.height - 1, self._model.get_child_count(self._current_node)
+            )
 
             for i in range(max_children):
-                buff.gotoxy(self._rect.x+2,self._rect.y+1+i)
+                buff.gotoxy(self._rect.x + 2, self._rect.y + 1 + i)
                 if i + 1 + self._scroll_y == self._current_y:
                     buff.underline()
                 buff.write(str(self._model.get_child(self._current_node, i)))
@@ -87,7 +92,7 @@ class TreeView(View):
     def on_key_press(self, key):
         if key == kbd.KEY_UP:
             if self._current_y > 0:
-                self._current_y-= 1
+                self._current_y -= 1
                 self.queue_update()
         elif key == kbd.KEY_DOWN:
             self._current_y += 1

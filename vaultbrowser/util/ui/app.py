@@ -14,6 +14,7 @@ class KeyHandler:
         self.handler = handler
         self.valid_on_popup = valid_on_popup
 
+
 class Application:
     def __init__(self):
         self._components = []
@@ -103,7 +104,10 @@ class Application:
                 self._handle_exit()
             elif keystroke == kbd.KEY_TAB:
                 self._cycle_focus()
+            elif keystroke == kbd.KEY_SHIFT_TAB:
+                self._cycle_focus_back()
             else:
+                #logging.info(keystroke)
                 handler = self._key_handlers.get(keystroke)
 
                 if handler and (handler.valid_on_popup or not self._active_popup):
@@ -128,6 +132,22 @@ class Application:
                 self._focused_index += 1
                 if self._focused_index >= len(self._components):
                     self._focused_index = 0
+                if self._components[self._focused_index].focusable:
+                    break
+            active = self._components[self._focused_index]
+            active.set_focused(True)
+
+    def _cycle_focus_back(self):
+        if self._active_popup:
+            self._active_popup.set_focused(True)
+
+        if self._components:
+            active = self._components[self._focused_index]
+            active.set_focused(False)
+            while True:
+                self._focused_index -= 1
+                if self._focused_index < 0:
+                    self._focused_index = len(self._components)-1
                 if self._components[self._focused_index].focusable:
                     break
             active = self._components[self._focused_index]

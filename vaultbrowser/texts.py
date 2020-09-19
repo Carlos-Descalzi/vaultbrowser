@@ -1,6 +1,6 @@
 from .util import ansi
 
-HELP=f"""
+HELP = f"""
 {ansi.BOLD}HELP{ansi.RESET}
 {ansi.BOLD}===={ansi.RESET}
 

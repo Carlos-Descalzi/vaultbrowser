@@ -1,6 +1,7 @@
 import logging
 from abc import ABCMeta, abstractmethod
 
+
 class BackendHandler(metaclass=ABCMeta):
     def __init__(self, client, backend_info):
         self._client = client
@@ -22,8 +23,4 @@ class BackendHandler(metaclass=ABCMeta):
     @abstractmethod
     def delete(self, path):
         pass
-
-class KV2Handler(BackendHandler):
-    pass
-
 

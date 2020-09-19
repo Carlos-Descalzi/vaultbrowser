@@ -2,7 +2,6 @@ from vaultbrowser.util.ui import ListModel
 
 
 class ServicesListModel(ListModel):
-
     def __init__(self, services=[]):
         super().__init__()
         self._services = services

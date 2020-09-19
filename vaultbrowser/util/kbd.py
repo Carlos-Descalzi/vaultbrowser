@@ -9,6 +9,8 @@ KEY_PGUP = keystroke([27, 91, 53])
 KEY_PGDN = keystroke([27, 91, 54])
 KEY_HOME = keystroke([27, 91, 72])
 
+KEY_SHIFT_TAB = 279190
+
 KEY_ESC = 27
 KEY_TAB = 9
 KEY_ENTER = 13

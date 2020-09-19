@@ -5,13 +5,14 @@ import hvac
 import os
 from .handler import get_handler
 
+
 class Node:
     def __init__(self, handler, parent, name):
         self._handler = handler
         self._parent = parent
         self._name = name
-        self._children = None #if name and name[-1] == "/" else []
-        logging.info(f'Path:{self.path}')
+        self._children = None  # if name and name[-1] == "/" else []
+        logging.info(f"Path:{self.path}")
 
     @property
     def child_count(self):
@@ -23,10 +24,10 @@ class Node:
         node = self
         while node:
             if node.name:
-                path.append(node.name.replace('/',''))
+                path.append(node.name.replace("/", ""))
             node = node.parent
 
-        return '/'.join(reversed(path))
+        return "/".join(reversed(path))
 
     @property
     def children(self):
@@ -34,15 +35,13 @@ class Node:
             if self._children is None:
                 children = []
                 result = self._handler.list(self.path)
-                self._children= sorted(
-                    [Node(self._handler, self, i) for i in result],
-                    key=lambda x:x.name
+                self._children = sorted(
+                    [Node(self._handler, self, i) for i in result], key=lambda x: x.name
                 )
             return self._children
         except Exception as e:
-            logging.error(f'{e} - {traceback.format_exc()}')
+            logging.error(f"{e} - {traceback.format_exc()}")
             return self._children
-            
 
     def get_value(self):
         return self._handler.read(self.path)
@@ -54,7 +53,7 @@ class Node:
 
     @property
     def leaf(self):
-        return self._name[-1] != '/' if self._name else False
+        return self._name[-1] != "/" if self._name else False
 
     @property
     def parent(self):
@@ -73,8 +72,9 @@ class Node:
     def add_child(self, name, data):
         new_path = "/".join([self.path, name])
         self._client.write(new_path, **data)
-        self._children.append(Node(self._handler,self , name))
+        self._children.append(Node(self._handler, self, name))
         return len(self._children) - 1
+
 
 class VaultListModel(ListModel):
     def __init__(self):
@@ -122,7 +122,7 @@ class VaultListModel(ListModel):
                 self._current = None
             self.notify_list_changed()
         except Exception as e:
-            logging.error(f'{e} - {traceback.format_exc()}')
+            logging.error(f"{e} - {traceback.format_exc()}")
 
     def get_root(self):
         return self._root
@@ -156,6 +156,5 @@ class VaultListModel(ListModel):
         if not self.in_root:
             if index == 0:
                 return ".."
-            index-=1
+            index -= 1
         return self._current.children[index]
-
