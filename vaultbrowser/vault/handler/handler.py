@@ -17,6 +17,10 @@ class BackendHandler(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def read_value(self, path):
+        pass
+
+    @abstractmethod
     def list(self, path):
         pass
 

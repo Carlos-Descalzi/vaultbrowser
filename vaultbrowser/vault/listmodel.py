@@ -7,8 +7,8 @@ from .handler import get_handler
 
 
 class Node:
-    def __init__(self, handler, parent, name):
-        self._handler = handler
+    def __init__(self, model, parent, name):
+        self._model = model
         self._parent = parent
         self._name = name
         self._children = None  # if name and name[-1] == "/" else []
@@ -34,9 +34,9 @@ class Node:
         try:
             if self._children is None:
                 children = []
-                result = self._handler.list(self.path)
+                result = self._model._handler.list(self.path)
                 self._children = sorted(
-                    [Node(self._handler, self, i) for i in result], key=lambda x: x.name
+                    [Node(self._model, self, i) for i in result], key=lambda x: x.name
                 )
             return self._children
         except Exception as e:
@@ -44,12 +44,16 @@ class Node:
             return self._children
 
     def get_value(self):
-        return self._handler.read(self.path)
+        return self._model._handler.read(self.path)
 
     def set_value(self, value):
-        self._handler.write(self.path, **value)
+        self._model._handler.write(self.path, value)
 
     value = property(get_value, set_value)
+
+    @property
+    def data(self):
+        return self._model._handler.read_value(self.path)
 
     @property
     def leaf(self):
@@ -67,14 +71,14 @@ class Node:
         return self.name
 
     def remove(self):
-        self._handler.delete(self.path)
+        self._model._handler.delete(self.path)
 
     def add_child(self, name, data):
         new_path = "/".join([self.path, name])
-        self._client.write(new_path, **data)
-        self._children.append(Node(self._handler, self, name))
-        return len(self._children) - 1
-
+        logging.info(f"New path:{new_path}, value:{data}")
+        self._model._handler.write(new_path, data)
+        self._children.append(Node(self._model, self, name))
+        self._model.notify_list_changed()
 
 class VaultListModel(ListModel):
     """
@@ -119,7 +123,7 @@ class VaultListModel(ListModel):
     def _update(self):
         try:
             if self._handler:
-                self._root = Node(self._handler, None, "")
+                self._root = Node(self, None, "")
                 self._current = self._root
             else:
                 self._root = None

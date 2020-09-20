@@ -225,23 +225,11 @@ class VaultBrowser(Application):
             logging.error(f"{e} - {traceback.format_exc()}")
 
     def _show_selected_item(self, item):
-        value = item.value  # ["data"]
+        value = item.value
         self._breadcrumb.title = item.path
 
-        if self._highlighter:
-            tf = tempfile.NamedTemporaryFile(mode="w+", suffix=".json")
-            json.dump(value, tf, indent=4)
-            tf.flush()
-            try:
-                result = subprocess.check_output(
-                    self._highlighter.format(file=tf.name), shell=True
-                )
-                self._textview.text = result.decode()
-            except Exception as e:
-                logging.error(e)
-                self._textview.text = json.dumps(value, indent=4)
-        else:
-            self._textview.text = json.dumps(value, indent=4)
+        self._display_entry(value)
+
 
     def _set_path_title(self, path):
         if len(path) > 40:
@@ -250,6 +238,27 @@ class VaultBrowser(Application):
 
     def _do_add(self, *_):
         self.show_input_dialog("Enter entry name", self._on_add_name_confirmed)
+
+    def _display_entry(self, value):
+        if self._highlighter:
+            tf = misc.make_tempfile(json.dumps(value,indent=4),'.json')
+            try:
+                result = subprocess.check_output(
+                    self._highlighter.format(file=tf.name), shell=True
+                )
+                self._textview.text = result.decode()
+            except Exception as e:
+                logging.error(e)
+                self._textview.text = json.dumps(value, indent=4)
+            finally:
+                try:
+                    tf.close()
+                    os.remove(tf.name)
+                except Exception as e:
+                    logging.warn(f'Unable to remove tempfile {e}')
+        else:
+            self._textview.text = json.dumps(value, indent=4)
+
 
     def _on_add_name_confirmed(self, entry_name):
         selected = self._tree.model.get_current()
@@ -261,7 +270,8 @@ class VaultBrowser(Application):
                 data = json.load(tf)
                 if data:
                     selected.add_child(entry_name, data)
-                    self._textview.text = json.dumps(data, indent=4)
+            except ValueError as e:
+                self._show_error(e)
             except Exception as e:
                 logging.error(f"{e} - {traceback.format_exc()}")
                 self._textview.text = ""
@@ -269,17 +279,19 @@ class VaultBrowser(Application):
 
     def _do_edit(self, *_):
         selected = self._tree.current_item
-        value = selected.value
-        tf = misc.make_tempfile(json.dumps(value['data']),'.json')
+        value = selected.data
+        tf = misc.make_tempfile(json.dumps(value,indent=4),'.json')
         result = subprocess.run([self._editor, tf.name])
         if result.returncode == 0:
             tf.seek(0)
             try:
                 edited_stuff = json.load(tf)
                 selected.value = edited_stuff
-                self._textview.text = json.dumps(selected.value, indent=4)
+                self._display_entry(selected.value)
             except ValueError as e:
-                logging.error(e)
+                self._show_error(e)
+            except Exception as e:
+                logging.error(f'Error writing value {e} - {traceback.format_exc()}')
         self.refresh()
 
     def _do_delete(self, *_):
@@ -298,6 +310,10 @@ class VaultBrowser(Application):
             "Sure you want to delete? (y/n)",
             [("y", "Yes", confirm), ("n", "No", cancel)],
         )
+
+    def _show_error(self, error):
+        logging.error(error)
+        # TODO Complete
 
     def _show_help(self, *_):
         dialog = TextView(rect=Rect(0, 0, 70, 20), text=texts.HELP)

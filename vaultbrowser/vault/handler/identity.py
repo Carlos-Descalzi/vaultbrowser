@@ -13,6 +13,9 @@ class IdentityHandler(BackendHandler):
     def read(self, path):
         return self._client.read(self._real_path(path))
 
+    def read_value(self, path):
+        return self.read(path)
+
     def list(self, path):
         logging.info(f"list {path}")
         if path in ["", "/"]:

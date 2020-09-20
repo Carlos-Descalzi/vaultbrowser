@@ -13,12 +13,18 @@ class GenericHandler(BackendHandler):
     def read(self, path):
         return self._client.read(self._real_path(path))
 
+    def read_value(self, path):
+        value = self.read(path)
+        if value:
+            return value['data']
+        return value
+
     def list(self, path):
         entry = self._client.list(self._real_path(path))
         return (entry or {}).get("data", {}).get("keys", [])
 
     def write(self, path, data):
-        self._client.write(self._real_path(path), data)
+        self._client.write(self._real_path(path), **data)
 
     def delete(self, path):
         self._client.delete(self._real_path(path))

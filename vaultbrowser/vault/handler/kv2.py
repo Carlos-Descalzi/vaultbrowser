@@ -20,6 +20,12 @@ class KV2Handler(BackendHandler):
             mount_point=self._mount_point, path=path
         )
 
+    def read_value(self, path):
+        value = self.read(path)
+        if value:
+            return value['data']['data']
+        return value
+
     def list(self, path):
         result = self._client.secrets.kv.v2.list_secrets(
             mount_point=self._mount_point, path=path
@@ -27,6 +33,6 @@ class KV2Handler(BackendHandler):
         return result.get("data", {}).get("keys", [])
 
     def delete(self, path):
-        self._client.secrets.kv.v2.delete_latest_version_of_secret(
+        self._client.secrets.kv.v2.delete_metadata_and_all_versions(
             mount_point=self._mount_point, path=path
         )
