@@ -3,8 +3,9 @@ import logging
 logging.basicConfig(
     filename="vaultbrowser.log", format="%(message)s", level=logging.DEBUG
 )
-from .util import kbd, ansi
-from .util.ui import (
+from cdtui import (
+    ansi,
+    kbd,
     Application,
     TextView,
     TreeView,
@@ -15,9 +16,9 @@ from .util.ui import (
     QuestionDialog,
     InputDialog,
 )
+from . import misc, texts
 from .vault import VaultListModel, ServicesListModel, BackendListModel
 from .service import Service
-from .texts import HELP
 import json
 import tempfile
 import subprocess
@@ -252,13 +253,8 @@ class VaultBrowser(Application):
 
     def _on_add_name_confirmed(self, entry_name):
         selected = self._tree.model.get_current()
-
-        tf = tempfile.NamedTemporaryFile(mode="w+", suffix=".json")
-        json.dump({"data": ""}, tf, indent=4)
-        tf.flush()
-
+        tf = misc.make_tempfile(json.dumps({'data':''}),'.json')
         result = subprocess.run([self._editor, tf.name])
-
         if result.returncode == 0:
             tf.seek(0)
             try:
@@ -273,14 +269,9 @@ class VaultBrowser(Application):
 
     def _do_edit(self, *_):
         selected = self._tree.current_item
-
         value = selected.value
-        tf = tempfile.NamedTemporaryFile(mode="w+", suffix=".json")
-        json.dump(value["data"], tf, indent=4)
-        tf.flush()
-
+        tf = misc.make_tempfile(json.dumps(value['data']),'.json')
         result = subprocess.run([self._editor, tf.name])
-
         if result.returncode == 0:
             tf.seek(0)
             try:
@@ -309,7 +300,7 @@ class VaultBrowser(Application):
         )
 
     def _show_help(self, *_):
-        dialog = TextView(rect=Rect(0, 0, 70, 20), text=HELP)
+        dialog = TextView(rect=Rect(0, 0, 70, 20), text=texts.HELP)
         self.open_popup(dialog)
 
 

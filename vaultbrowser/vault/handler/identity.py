@@ -4,6 +4,9 @@ import logging
 
 
 class IdentityHandler(BackendHandler):
+    """
+    Handler for identity backend
+    """
     def _real_path(self, path):
         return str(PurePath(self._backend_info.name, path))
 

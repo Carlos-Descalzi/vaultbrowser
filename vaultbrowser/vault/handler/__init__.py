@@ -1,3 +1,5 @@
+__all__ = [ 'get_handler']
+
 from .generic import GenericHandler
 from .kv2 import KV2Handler
 from .identity import IdentityHandler
@@ -33,4 +35,8 @@ def _get_handler_type(backend):
 
 
 def get_handler(client, backend_info):
+    """
+    Returns the appropiate handler for a given backend,
+    or generic handler if none is suitable.
+    """
     return _get_handler_type(backend_info)(client, backend_info)

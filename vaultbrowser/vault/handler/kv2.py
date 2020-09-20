@@ -3,6 +3,9 @@ from .handler import BackendHandler
 
 
 class KV2Handler(BackendHandler):
+    """
+    Handler for Key/Value V.2 backend
+    """
     @property
     def _mount_point(self):
         return self._backend_info.name

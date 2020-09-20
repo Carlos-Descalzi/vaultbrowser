@@ -1,4 +1,4 @@
-from vaultbrowser.util.ui import ListModel
+from cdtui import ListModel
 import logging
 
 
@@ -20,6 +20,9 @@ class BackendItem:
 
 
 class BackendListModel(ListModel):
+    """
+    Backends list model.
+    """
     def __init__(self):
         super().__init__()
         self._client = None

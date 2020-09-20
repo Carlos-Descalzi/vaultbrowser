@@ -1,4 +1,4 @@
-from .util import ansi
+from cdtui import ansi
 
 HELP = f"""
 {ansi.BOLD}HELP{ansi.RESET}

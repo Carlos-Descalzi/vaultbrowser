@@ -1,4 +1,4 @@
-from vaultbrowser.util.ui import ListModel
+from cdtui import ListModel
 import logging
 import traceback
 import hvac
@@ -77,6 +77,10 @@ class Node:
 
 
 class VaultListModel(ListModel):
+    """
+    List model for vault contents.
+    This model works pretty much like a tree navigator.
+    """
     def __init__(self):
         super().__init__()
         self._client = None

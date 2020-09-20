@@ -1,10 +1,14 @@
-from .util.ui.listener import ListenerHandler
+from cdtui import ListenerHandler
 import threading
 import hvac
 import logging
 
 
 class Service:
+    """
+    Holds information of a configured vault service. Handles connection process
+    asynchronously, so connection status is notified via listeners.
+    """
     def __init__(self, name, url, token, verify_tls):
         self._on_connect = ListenerHandler(self)
         self._on_connect_error = ListenerHandler(self)

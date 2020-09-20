@@ -4,6 +4,9 @@ import logging
 
 
 class GenericHandler(BackendHandler):
+    """
+    Handler for Generic and Key/Value v.1 backends.
+    """
     def _real_path(self, path):
         return str(PurePath(self._backend_info.name, path))
 
