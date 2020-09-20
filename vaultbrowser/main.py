@@ -206,6 +206,8 @@ class VaultBrowser(Application):
             self._vault_model.client = item.client
             self._vault_model.backend = None
             self._textview.text = ""
+        else:
+            self._show_error(item.error)
 
     def _on_backend_selected(self, view, item):
         self._vault_model.backend = item
@@ -222,6 +224,7 @@ class VaultBrowser(Application):
                 tree.model.go_to(item)
                 self._set_path_title(item.path)
         except Exception as e:
+            self._show_error(e) 
             logging.error(f"{e} - {traceback.format_exc()}")
 
     def _show_selected_item(self, item):
@@ -251,11 +254,7 @@ class VaultBrowser(Application):
                 logging.error(e)
                 self._textview.text = json.dumps(value, indent=4)
             finally:
-                try:
-                    tf.close()
-                    os.remove(tf.name)
-                except Exception as e:
-                    logging.warn(f'Unable to remove tempfile {e}')
+                self._drop_file(tf)
         else:
             self._textview.text = json.dumps(value, indent=4)
 
@@ -274,7 +273,9 @@ class VaultBrowser(Application):
                 self._show_error(e)
             except Exception as e:
                 logging.error(f"{e} - {traceback.format_exc()}")
+                self._show_error(e) 
                 self._textview.text = ""
+        self._drop_file(tf)
         self.refresh()
 
     def _do_edit(self, *_):
@@ -292,6 +293,7 @@ class VaultBrowser(Application):
                 self._show_error(e)
             except Exception as e:
                 logging.error(f'Error writing value {e} - {traceback.format_exc()}')
+        self._drop_file(tf)
         self.refresh()
 
     def _do_delete(self, *_):
@@ -312,13 +314,35 @@ class VaultBrowser(Application):
         )
 
     def _show_error(self, error):
-        logging.error(error)
-        # TODO Complete
+        error_str = misc.word_wrap_text(str(error), 70)
+        error_str =f"An error has occurred:\n\n{error_str}"
+        self._show_text_popup(error_str)
 
     def _show_help(self, *_):
-        dialog = TextView(rect=Rect(0, 0, 70, 20), text=texts.HELP)
-        self.open_popup(dialog)
+        self._show_text_popup(texts.HELP)
 
+    def _drop_file(self, fp):
+        try:
+            tf.close()
+            os.remove(tf.name)
+        except Exception as e:
+            logging.warn(f'Unable to remove tempfile {e}')
+
+
+    def _show_text_popup(self, text):    
+        max_height, max_width = ansi.terminal_size()    
+    
+        popup_width = int(max_width * 0.75)    
+        popup_height = int(max_height * 0.75)    
+    
+        rect = Rect(    
+            int((max_width - popup_width) / 2),    
+            int((max_height - popup_height) / 2),    
+            popup_width,    
+            popup_height,    
+        )    
+        text_view = TextView(rect=rect, text=text)    
+        self.open_popup(text_view) 
 
 def main():
     explorer = VaultBrowser()
