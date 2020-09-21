@@ -323,8 +323,8 @@ class VaultBrowser(Application):
 
     def _drop_file(self, fp):
         try:
-            tf.close()
-            os.remove(tf.name)
+            fp.close()
+            os.remove(fp.name)
         except Exception as e:
             logging.warn(f'Unable to remove tempfile {e}')
 
