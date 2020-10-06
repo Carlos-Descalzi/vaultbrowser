@@ -248,7 +248,7 @@ class VaultBrowser(Application):
 
     def _display_entry(self, value):
         if self._highlighter:
-            tf = misc.make_tempfile(json.dumps(value,indent=4),'.json')
+            tf = misc.make_tempfile(json.dumps(value,indent=4),'json')
             try:
                 result = subprocess.check_output(
                     self._highlighter.format(file=tf.name), shell=True
