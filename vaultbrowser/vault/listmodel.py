@@ -70,7 +70,7 @@ class Node:
     def __str__(self):
         return self.name
 
-    def remove(self):
+    def remove(self, recursively):
         self._model._handler.delete(self.path)
 
     def add_child(self, name, data):
@@ -94,8 +94,7 @@ class VaultListModel(ListModel):
         self._current = None
 
     def set_client(self, client):
-        old_client = self._client
-        self._client = client
+        old_client, self._client = self._client, client
         if old_client == client:
             self._backend = None
             self._handler = None
@@ -138,8 +137,8 @@ class VaultListModel(ListModel):
     def get_current(self):
         return self._current
 
-    def remove_child(self, item):
-        item.remove()
+    def remove_child(self, item, recursively=False):
+        item.remove(recursively)
         self._current.children.remove(item)
         self.notify_list_changed()
 

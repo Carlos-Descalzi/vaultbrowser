@@ -81,6 +81,8 @@ class VaultBrowser(Application):
         self.set_key_handler(kbd.keystroke_from_str("a"), self._do_add, False)
         self.set_key_handler(kbd.keystroke_from_str("e"), self._do_edit, False)
         self.set_key_handler(kbd.keystroke_from_str("d"), self._do_delete, False)
+        self.set_key_handler(kbd.keystroke_from_str("D"), self._do_delete_recursively, False)
+        self.set_key_handler(kbd.keystroke_from_str("E"), self._do_export, False)
         self.set_key_handler(kbd.keystroke_from_str("h"), self._show_help, False)
 
         self._read_config()
@@ -256,6 +258,8 @@ class VaultBrowser(Application):
             finally:
                 self._drop_file(tf)
         else:
+            text = json.dumps(value,indent=4)
+            logging.info(text)
             self._textview.text = json.dumps(value, indent=4)
 
 
@@ -312,6 +316,25 @@ class VaultBrowser(Application):
             "Sure you want to delete? (y/n)",
             [("y", "Yes", confirm), ("n", "No", cancel)],
         )
+
+    def _do_delete_recursively(self, *_):
+        parent = self._tree.model.get_current()
+        item = self._tree.current_item
+        def confirm():
+            item.remove()
+            self._tree.model.remove_child(item, False)
+
+        def cancel():
+            pass
+
+        self.show_question_dialog(
+            "Warning",
+            "Sure you want to recursively delete this path? (y/n)",
+            [("y", "Yes", confirm), ("n", "No", cancel)],
+        )
+
+    def _do_export(self, *_):
+        pass
 
     def _show_error(self, error):
         error_str = misc.word_wrap_text(str(error), 70)
