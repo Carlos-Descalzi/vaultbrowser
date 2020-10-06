@@ -58,10 +58,10 @@ class VaultBrowser(Application):
             rect=Rect(1, 1, w1, h1), title="Services", inner=self._services_list
         )
         self.add_component(services_title)
-        backends_title = TitledView(
+        self._backends_title = TitledView(
             rect=Rect(1, h1 + 1, w1, h1), title="Backends", inner=self._backends_list
         )
-        self.add_component(backends_title)
+        self.add_component(self._backends_title)
         self._tree_title = TitledView(
             rect=Rect(1, h1 * 2 + 1, w1, max_height - (h1 * 2 + 2)),
             title="",
@@ -208,12 +208,14 @@ class VaultBrowser(Application):
             self._vault_model.client = item.client
             self._vault_model.backend = None
             self._textview.text = ""
+            self.set_focused_view(self._backends_title)
         else:
             self._show_error(item.error)
 
     def _on_backend_selected(self, view, item):
         self._vault_model.backend = item
         self._textview.text = ""
+        self.set_focused_view(self._tree_title)
 
     def _on_select(self, tree, item):
         try:
