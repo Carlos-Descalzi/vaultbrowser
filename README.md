@@ -2,7 +2,7 @@
 
 A terminal-based HashiCorp's Vault client
 
-For the moment only supports generic secret engine.
+For the moment only supports generic/kv/kv2 secret backends.
 
 ![Screenhost](screenshot.png?raw=true "Screenhost")
 
